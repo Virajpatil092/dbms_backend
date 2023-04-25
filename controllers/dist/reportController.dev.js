@@ -1,46 +1,55 @@
 "use strict";
 
-var oracledb = require('oracledb');
+var mysql = require('mysql');
 
 var getReports = function getReports(req, res) {
-  var connection, query, result;
+  var connection, selectQuery;
   return regeneratorRuntime.async(function getReports$(_context) {
     while (1) {
       switch (_context.prev = _context.next) {
         case 0:
-          _context.prev = 0;
-          _context.next = 3;
-          return regeneratorRuntime.awrap(oracledb.getConnection({
-            user: 'sysdba',
-            password: 'password',
-            connectString: 'localhost:1521/orcl'
-          }));
+          try {
+            connection = mysql.createConnection({
+              host: 'localhost',
+              user: 'root',
+              password: 'ENTITY_303',
+              database: 'sys',
+              authSwitchHandler: function authSwitchHandler(_ref, cb) {
+                var pluginName = _ref.pluginName,
+                    pluginData = _ref.pluginData;
 
-        case 3:
-          connection = _context.sent;
-          query = "SELECT * FROM students";
-          _context.next = 7;
-          return regeneratorRuntime.awrap(connection.execute(query));
+                if (pluginName === 'mysql_native_password') {
+                  var password = 'ENTITY_303';
+                  var token = mysql.auth.generateToken(password);
+                  return cb(null, token);
+                }
 
-        case 7:
-          result = _context.sent;
-          console.log(result);
-          res.json(result.rows);
-          _context.next = 16;
-          break;
+                return cb(new Error('Unsupported auth plugin'));
+              }
+            });
+            connection.connect();
+            selectQuery = "SELECT * FROM students";
+            connection.query(selectQuery, function (error, results, fields) {
+              if (error) {
+                console.error(error);
+                res.status(500).send('Internal Server Error');
+              } else {
+                console.log(results);
+                res.send(results);
+              }
+            });
+            connection.end();
+          } catch (error) {
+            console.error(error);
+            res.status(500).send('Internal Server Error');
+          }
 
-        case 12:
-          _context.prev = 12;
-          _context.t0 = _context["catch"](0);
-          console.error(_context.t0);
-          res.status(500).send('Internal Server Error');
-
-        case 16:
+        case 1:
         case "end":
           return _context.stop();
       }
     }
-  }, null, null, [[0, 12]]);
+  });
 };
 
 module.exports = {

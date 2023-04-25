@@ -1,4 +1,4 @@
-const oracledb = require('oracledb')
+const mysql = require('mysql');
 
 const addStudent = async (req, res) => {
   try {
@@ -9,25 +9,44 @@ const addStudent = async (req, res) => {
     }
 
     console.log(student);
-    const connection = await oracledb.getConnection({
-      user: 'sysdba',
-      password: 'password',
-      connectString: 'localhost:1521/orcl'
+    const connection = mysql.createConnection({
+      host: 'localhost',
+      user: 'root',
+      password: 'ENTITY_303',
+      database: 'sys',
+      authSwitchHandler: function ({pluginName, pluginData}, cb) {
+        if (pluginName === 'mysql_native_password') {
+          const password = 'ENTITY_303';
+          const token = mysql.auth.generateToken(password);
+          return cb(null, token);
+        }
+        return cb(new Error('Unsupported auth plugin'));
+      }
+    });
+    
+
+    connection.connect();
+
+    const insertQuery = `INSERT INTO students (id, name, age, gender, dob, department) VALUES (?, ?, ?, ?, ?, ?)`;
+
+    connection.query(insertQuery, [
+      student.id,
+      student.name,
+      student.age,
+      student.gender,
+      student.DOB,
+      student.department
+    ], (error, results, fields) => {
+      if (error) {
+        console.error(error);
+        res.status(500).send('Internal Server Error');
+      } else {
+        console.log(results);
+        res.send(student);
+      }
     });
 
-    const insertQuery = `INSERT INTO students (id, name, age, gender, dob, department) VALUES (:id, :name, :age, :gender, :dob, :department)`;
-
-    const result = await connection.execute(insertQuery, {
-      id: student.id,
-      name: student.name,
-      age: student.age,
-      gender: student.gender,
-      dob: student.DOB,
-      department: student.department
-    });
-
-    console.log(result);
-    res.send(student);
+    connection.end();
   } catch (error) {
     console.error(error);
     res.status(500).send('Internal Server Error');

@@ -1,6 +1,6 @@
 const express=require('express');
 const app=express();
-const oracleDB=require('oracledb');
+const mysql = require('mysql');
 const cors = require('cors')
 
 app.use(cors())

@@ -1,20 +1,37 @@
-const oracledb = require('oracledb')
+const mysql = require('mysql');
 
 const getReports = async (req, res) => {
   try {
-    const connection = await oracledb.getConnection({
-      user: 'sysdba',
-      password: 'password',
-      connectString: 'localhost:1521/orcl'
+    const connection = mysql.createConnection({
+      host: 'localhost',
+      user: 'root',
+      password: 'ENTITY_303',
+      database: 'sys',
+      authSwitchHandler: function ({pluginName, pluginData}, cb) {
+        if (pluginName === 'mysql_native_password') {
+          const password = 'ENTITY_303';
+          const token = mysql.auth.generateToken(password);
+          return cb(null, token);
+        }
+        return cb(new Error('Unsupported auth plugin'));
+      }
     });
 
-    const query = `SELECT * FROM students`;
+    connection.connect();
 
-    const result = await connection.execute(query);
+    const selectQuery = `SELECT * FROM students`;
 
-    console.log(result);
+    connection.query(selectQuery, (error, results, fields) => {
+      if (error) {
+        console.error(error);
+        res.status(500).send('Internal Server Error');
+      } else {
+        console.log(results);
+        res.send(results);
+      }
+    });
 
-    res.json(result.rows);
+    connection.end();
   } catch (error) {
     console.error(error);
     res.status(500).send('Internal Server Error');

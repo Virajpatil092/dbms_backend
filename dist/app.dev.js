@@ -4,7 +4,7 @@ var express = require('express');
 
 var app = express();
 
-var oracleDB = require('oracledb');
+var mysql = require('mysql');
 
 var cors = require('cors');
 
